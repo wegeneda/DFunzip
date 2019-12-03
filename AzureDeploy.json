@@ -1,0 +1,243 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "baseName": {
+            "defaultValue": "UnzipToAzureFiles",
+            "type": "string",
+            "metadata": {
+                "description": "Name use as base-template to named the resources deployed in Azure."
+            }
+        },
+        "TargetStorageAccount": {
+            "type": "string",
+            "defaultValue": "transfer",
+            "metadata": {
+                "description": "Name of the storage account where the files will be drop and unziped. (Default = transfer)."
+            }
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]",
+        "suffix": "[substring(toLower(uniqueString(resourceGroup().id, resourceGroup().location)),0,5)]",
+        "factoryName": "[toLower(concat(parameters('baseName'), variables('suffix')))]",
+        "fileStorageName": "[tolower(concat(substring(parameters('TargetStorageAccount'), 0, min(length(parameters('TargetStorageAccount')),16)), 'stg', variables('suffix')))]",
+        "StorageAccount_connectionString":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('fileStorageName'), ';AccountKey=', listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)",
+        "AzureFileStorage1_password":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('fileStorageName'), ';AccountKey=', listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)",
+        "AzureFileStorage1_properties_typeProperties_host": "[concat('\\\\',(variable('fileStorageName'),'.file.core.windows.net\\output')]",
+        "AzureFileStorage1_properties_typeProperties_userId": "[concat('Azure\\',(variable('fileStorageName')]",
+        "trigger1_properties_typeProperties_scope": "[resourceid('Microsoft.Storage/storageAccounts',variables('fileStorageName')]"
+        },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "name": "[variables('fileStorageName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "fileStorageName"
+            },
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "resources": [
+                {
+                    "type": "blobServices/containers",
+                    "apiVersion": "2018-07-01",
+                    "name": "[concat('default/', 'upload')]",
+                    "dependsOn": [
+                        "[variables('fileStorageName')]"
+                    ],
+                    "properties": {
+                        "publicAccess": "Blob"
+                    }
+                },
+                {
+                    "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+                    "apiVersion": "2019-04-01",
+                    "name": "[concat(variables('fileStorageName'), '/default/', 'output')]",
+                    "dependsOn": [
+                        "[variables('fileStorageName')]"
+                    ]
+                }
+            ]       
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/UnzipFilesFromBlobToFiles')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Copy_p8x",
+                        "type": "Copy",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [
+                            {
+                                "name": "Source",
+                                "value": "upload//"
+                            },
+                            {
+                                "name": "Destination",
+                                "value": "/"
+                            }
+                        ],
+                        "typeProperties": {
+                            "source": {
+                                "type": "BinarySource",
+                                "storeSettings": {
+                                    "type": "AzureBlobStorageReadSettings",
+                                    "recursive": true,
+                                    "wildcardFileName": "*"
+                                }
+                            },
+                            "sink": {
+                                "type": "BinarySink",
+                                "storeSettings": {
+                                    "type": "AzureFileStorageWriteSettings"
+                                }
+                            },
+                            "enableStaging": false
+                        },
+                        "inputs": [
+                            {
+                                "referenceName": "SourceDataset_p8x",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "referenceName": "DestinationDataset_p8x",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        ]
+                    }
+                ],
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/SourceDataset_p8x')]",
+                "[concat(variables('factoryId'), '/datasets/DestinationDataset_p8x')]",
+                "[variables('fileStorageName')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/StorageAccount')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[variables('StorageAccount_connectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureFileStorage1')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureFileStorage",
+                "typeProperties": {
+                    "host": "[variables('AzureFileStorage1_properties_typeProperties_host')]",
+                    "userId": "[variables('AzureFileStorage1_properties_typeProperties_userId')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[variables('AzureFileStorage1_password')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DestinationDataset_p8x')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "AzureFileStorage1",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureFileStorageLocation"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureFileStorage1')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/SourceDataset_p8x')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "StorageAccount",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Binary",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "container": "upload"
+                    },
+                    "compression": {
+                        "type": "ZipDeflate",
+                        "level": "Fastest"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/StorageAccount')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/trigger1')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Started",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "UnzipFilesFromBlobToFiles",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "BlobEventsTrigger",
+                "typeProperties": {
+                    "blobPathBeginsWith": "/upload/blobs/",
+                    "ignoreEmptyBlobs": false,
+                    "scope": "[variables('trigger1_properties_typeProperties_scope')]",
+                    "events": [
+                        "Microsoft.Storage.BlobCreated"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/UnzipFilesFromBlobToFiles')]"
+            ]
+        }
+    ]
+}

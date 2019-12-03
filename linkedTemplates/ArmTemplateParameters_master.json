@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "unzipdf"
+        },
+        "StorageAccount_connectionString": {
+            "value": ""
+        },
+        "AzureFileStorage1_password": {
+            "value": ""
+        },
+        "AzureFileStorage1_properties_typeProperties_host": {
+            "value": "\\\\uploaddf.file.core.windows.net\\output"
+        },
+        "AzureFileStorage1_properties_typeProperties_userId": {
+            "value": "Azure\\uploaddf"
+        },
+        "trigger1_properties_typeProperties_scope": {
+            "value": "/subscriptions/ebaa7186-4182-4b95-9c1f-0b02b314174c/resourceGroups/DataFactory/providers/Microsoft.Storage/storageAccounts/uploaddf"
+        },
+        "containerUri": {
+            "value": ""
+        },
+        "containerSasToken": {
+            "value": ""
+        }
+    }
+}
