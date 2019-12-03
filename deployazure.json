@@ -64,7 +64,7 @@
             ]       
         },
         {
-            "name": "[concat(parameters('factoryName'), '/UnzipFilesFromBlobToFiles')]",
+            "name": "[concat(variables('factoryName'), '/UnzipFilesFromBlobToFiles')]",
             "type": "Microsoft.DataFactory/factories/pipelines",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -132,7 +132,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/StorageAccount')]",
+            "name": "[concat(variables('factoryName'), '/StorageAccount')]",
             "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -145,7 +145,7 @@
             "dependsOn": []
         },
         {
-            "name": "[concat(parameters('factoryName'), '/AzureFileStorage1')]",
+            "name": "[concat(variables('factoryName'), '/AzureFileStorage1')]",
             "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -163,7 +163,7 @@
             "dependsOn": []
         },
         {
-            "name": "[concat(parameters('factoryName'), '/DestinationDataset_p8x')]",
+            "name": "[concat(variables('factoryName'), '/DestinationDataset_p8x')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -184,7 +184,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/SourceDataset_p8x')]",
+            "name": "[concat(variables('factoryName'), '/SourceDataset_p8x')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -210,7 +210,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/trigger1')]",
+            "name": "[concat(variables('factoryName'), '/trigger1')]",
             "type": "Microsoft.DataFactory/factories/triggers",
             "apiVersion": "2018-06-01",
             "properties": {
