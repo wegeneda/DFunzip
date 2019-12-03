@@ -18,15 +18,15 @@
         }
     },
     "variables": {
-        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]",
         "suffix": "[substring(toLower(uniqueString(resourceGroup().id, resourceGroup().location)),0,5)]",
         "factoryName": "[toLower(concat(parameters('baseName'), variables('suffix')))]",
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', variables('factoryName'))]",
         "fileStorageName": "[tolower(concat(substring(parameters('TargetStorageAccount'), 0, min(length(parameters('TargetStorageAccount')),16)), 'stg', variables('suffix')))]",
         "StorageAccount_connectionString":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('fileStorageName'), ';AccountKey=', listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)",
         "AzureFileStorage1_password":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('fileStorageName'), ';AccountKey=', listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)",
-        "AzureFileStorage1_properties_typeProperties_host": "[concat('\\\\',(variable('fileStorageName'),'.file.core.windows.net\\output')]",
-        "AzureFileStorage1_properties_typeProperties_userId": "[concat('Azure\\',(variable('fileStorageName')]",
-        "trigger1_properties_typeProperties_scope": "[resourceid('Microsoft.Storage/storageAccounts',variables('fileStorageName')]"
+        "AzureFileStorage1_properties_typeProperties_host": "[concat('\\\\', variables('fileStorageName'), '.file.core.windows.net\\output')]",
+        "AzureFileStorage1_properties_typeProperties_userId": "[concat('Azure\\',variables('fileStorageName'))]",
+        "trigger1_properties_typeProperties_scope": "[resourceid('Microsoft.Storage/storageAccounts',variables('fileStorageName'))]"
         },
     "resources": [
         {
