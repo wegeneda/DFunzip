@@ -138,7 +138,8 @@
             "dependsOn": [
                 "[concat(variables('factoryId'), '/datasets/SourceDataset_p8x')]",
                 "[concat(variables('factoryId'), '/datasets/DestinationDataset_p8x')]",
-                "[variables('fileStorageName')]"
+                "[variables('fileStorageName')]",
+                "[variables('factoryName')]"
             ]
         },
         {
@@ -190,7 +191,8 @@
                 }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureFileStorage1')]"
+                "[concat(variables('factoryId'), '/linkedServices/AzureFileStorage1')]",
+                "[variables('factoryName')]"
             ]
         },
         {
@@ -216,7 +218,8 @@
                 }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/StorageAccount')]"
+                "[concat(variables('factoryId'), '/linkedServices/StorageAccount')]",
+                "[variables('factoryName')]"
             ]
         },
         {
@@ -246,7 +249,8 @@
                 }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/UnzipFilesFromBlobToFiles')]"
+                "[concat(variables('factoryId'), '/pipelines/UnzipFilesFromBlobToFiles')]",
+                "[variables('factoryName')]"
             ]
         }
     ]
