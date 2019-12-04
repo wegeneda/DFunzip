@@ -4,14 +4,14 @@
     "parameters": {
         "baseName": {
             "defaultValue": "UnzipToAzureFiles",
-            "type": "string",
+            "type": "String",
             "metadata": {
                 "description": "Name use as base-template to named the resources deployed in Azure."
             }
         },
         "TargetStorageAccount": {
-            "type": "string",
             "defaultValue": "transfer",
+            "type": "String",
             "metadata": {
                 "description": "Name of the storage account where the files will be drop and unziped. (Default = transfer)."
             }
@@ -22,12 +22,11 @@
         "factoryName": "[toLower(concat(parameters('baseName'), variables('suffix')))]",
         "factoryId": "[concat('Microsoft.DataFactory/factories/', variables('factoryName'))]",
         "fileStorageName": "[tolower(concat(substring(parameters('TargetStorageAccount'), 0, min(length(parameters('TargetStorageAccount')),16)), 'stg', variables('suffix')))]",
-        "StorageAccount_connectionString":"[concat('DefaultEndpointsProtocol=https;AccountName=', variables('fileStorageName'), ';AccountKey=', listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)",
-        "AzureFileStorage1_password":"[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]",
+        "StorageAccount_connectionString": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('fileStorageName'), ';AccountKey=', listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)",
         "AzureFileStorage1_properties_typeProperties_host": "[concat('\\\\', variables('fileStorageName'), '.file.core.windows.net\\output')]",
         "AzureFileStorage1_properties_typeProperties_userId": "[concat('Azure\\',variables('fileStorageName'))]",
         "trigger1_properties_typeProperties_scope": "[resourceid('Microsoft.Storage/storageAccounts',variables('fileStorageName'))]"
-        },
+    },
     "resources": [
         {
             "type": "Microsoft.Storage/storageAccounts",
@@ -61,7 +60,7 @@
                         "[variables('fileStorageName')]"
                     ]
                 }
-            ]       
+            ]
         },
         {
             "type": "Microsoft.DataFactory/factories",
@@ -74,9 +73,15 @@
             "properties": {}
         },
         {
-            "name": "[concat(variables('factoryName'), '/UnzipFilesFromBlobToFiles')]",
             "type": "Microsoft.DataFactory/factories/pipelines",
             "apiVersion": "2018-06-01",
+            "name": "[concat(variables('factoryName'), '/UnzipFilesFromBlobToFiles')]",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/SourceDataset_p8x')]",
+                "[concat(variables('factoryId'), '/datasets/DestinationDataset_p8x')]",
+                "[variables('fileStorageName')]",
+                "[variables('factoryName')]"
+            ],
             "properties": {
                 "activities": [
                     {
@@ -134,33 +139,30 @@
                     }
                 ],
                 "annotations": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/datasets/SourceDataset_p8x')]",
-                "[concat(variables('factoryId'), '/datasets/DestinationDataset_p8x')]",
-                "[variables('fileStorageName')]",
-                "[variables('factoryName')]"
-            ]
+            }
         },
         {
-            "name": "[concat(variables('factoryName'), '/StorageAccount')]",
             "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
+            "name": "[concat(variables('factoryName'), '/StorageAccount')]",
+            "dependsOn": [
+                "[variables('factoryName')]"
+            ],
             "properties": {
                 "annotations": [],
                 "type": "AzureBlobStorage",
                 "typeProperties": {
-                    "connectionString": "[variables('StorageAccount_connectionString')]"
+                    "connectionString": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('fileStorageName'),';AccountKey=',listKeys(variables('fileStorageName'),'2015-05-01-preview').key1)]"
                 }
-            },
-            "dependsOn": [
-                "[variables('factoryName')]"
-            ]
+            }
         },
         {
-            "name": "[concat(variables('factoryName'), '/AzureFileStorage1')]",
             "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
+            "name": "[concat(variables('factoryName'), '/AzureFileStorage1')]",
+            "dependsOn": [
+                "[variables('factoryName')]"
+            ],
             "properties": {
                 "annotations": [],
                 "type": "AzureFileStorage",
@@ -169,18 +171,19 @@
                     "userId": "[variables('AzureFileStorage1_properties_typeProperties_userId')]",
                     "password": {
                         "type": "SecureString",
-                        "value": "[variables('AzureFileStorage1_password')]"
+                        "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('filestoragename')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
                     }
                 }
-            },
-            "dependsOn": [
-                "[variables('factoryName')]"
-            ]
+            }
         },
         {
-            "name": "[concat(variables('factoryName'), '/DestinationDataset_p8x')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
+            "name": "[concat(variables('factoryName'), '/DestinationDataset_p8x')]",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureFileStorage1')]",
+                "[variables('factoryName')]"
+            ],
             "properties": {
                 "linkedServiceName": {
                     "referenceName": "AzureFileStorage1",
@@ -193,16 +196,16 @@
                         "type": "AzureFileStorageLocation"
                     }
                 }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureFileStorage1')]",
-                "[variables('factoryName')]"
-            ]
+            }
         },
         {
-            "name": "[concat(variables('factoryName'), '/SourceDataset_p8x')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
+            "name": "[concat(variables('factoryName'), '/SourceDataset_p8x')]",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/StorageAccount')]",
+                "[variables('factoryName')]"
+            ],
             "properties": {
                 "linkedServiceName": {
                     "referenceName": "StorageAccount",
@@ -220,16 +223,16 @@
                         "level": "Fastest"
                     }
                 }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/StorageAccount')]",
-                "[variables('factoryName')]"
-            ]
+            }
         },
         {
-            "name": "[concat(variables('factoryName'), '/trigger1')]",
             "type": "Microsoft.DataFactory/factories/triggers",
             "apiVersion": "2018-06-01",
+            "name": "[concat(variables('factoryName'), '/trigger1')]",
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/UnzipFilesFromBlobToFiles')]",
+                "[variables('factoryName')]"
+            ],
             "properties": {
                 "annotations": [],
                 "runtimeState": "Started",
@@ -251,11 +254,8 @@
                         "Microsoft.Storage.BlobCreated"
                     ]
                 }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/UnzipFilesFromBlobToFiles')]",
-                "[variables('factoryName')]"
-            ]
+            }
         }
-    ]
+    ],
+    "outputs": {}
 }
